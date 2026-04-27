@@ -1,0 +1,35 @@
+# Gradle
+.gradle/
+app-android/.gradle/
+app-android/build/
+app-android/app/build/
+*.apk
+
+# Xcode
+DateDrop3.xcworkspace/
+xcuserdata/
+DerivedData/
+*.xcscmblueprint
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+venv/
+.venv/
+
+# Node
+node_modules/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vercel
+website/.vercel/
