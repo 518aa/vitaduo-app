@@ -1,3 +1,11 @@
+databases:
+  - name: vitaduo-db
+    databaseName: vitaduo_db
+    user: vitaduo_db_user
+    plan: free
+    region: oregon
+    postgresMajorVersion: "15"
+
 services:
   - type: web
     name: vitaduo-api
@@ -12,13 +20,13 @@ services:
       - key: PYTHON_VERSION
         value: "3.10.13"
       - key: SECRET_KEY
-        sync: false
+        value: vdk-9f3k-x7m2-p4n8-q1w5-r6t0-y8u3
       - key: JWT_SECRET_KEY
-        sync: false
+        value: jwt-h5g7-k3m9-n2p4-w8r1-t6y0-u4i7
       - key: DATABASE_URL
-        sync: false
+        value: postgresql://vitaduo_db_user:EfFDZs1L7M6Ha6Pc4MkKQ5REejcESiTh@dpg-d7o38d0sfn5c73eea6d0-a:5432/vitaduo_db
       - key: GLM_API_KEY
-        sync: false
+        value: af2ac6af0bd34a0c987cc06cbe76f8bc.Rf1zHUTET4YblYx9
       - key: GLM_API_BASE
         value: https://open.bigmodel.cn/api/coding/paas/v4/chat/completions
       - key: GLM_MODEL
