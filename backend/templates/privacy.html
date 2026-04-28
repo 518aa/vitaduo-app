@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="VitaDuo Privacy Policy - Your privacy is our priority">
+    <title>Privacy Policy - VitaDuo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .privacy-page {
+            padding: 120px 0 60px;
+            min-height: 100vh;
+        }
+        .privacy-content {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 3rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+        .privacy-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            color: var(--text-color);
+        }
+        .privacy-section {
+            margin-bottom: 2rem;
+        }
+        .privacy-section h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-color);
+        }
+        .privacy-section h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            margin-top: 1.5rem;
+            color: var(--text-color);
+        }
+        .privacy-section p {
+            color: var(--text-light);
+            line-height: 1.8;
+            margin-bottom: 1rem;
+        }
+        .privacy-section ul {
+            margin-left: 2rem;
+            margin-bottom: 1rem;
+        }
+        .privacy-section li {
+            color: var(--text-light);
+            line-height: 1.8;
+            margin-bottom: 0.5rem;
+        }
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .back-button:hover {
+            text-decoration: underline;
+        }
+        .contact-info {
+            background: #f9fafb;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-top: 2rem;
+        }
+        .contact-info p {
+            margin-bottom: 0.5rem;
+        }
+        .effective-date {
+            color: var(--text-light);
+            font-size: 0.875rem;
+            margin-bottom: 2rem;
+        }
+        @media (max-width: 768px) {
+            .privacy-content {
+                padding: 1.5rem;
+            }
+            .privacy-title {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <span class="logo">💜 VitaDuo</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="/" class="nav-link">Home</a></li>
+                <li><a href="/privacy" class="nav-link active">Privacy Policy</a></li>
+                <li><button id="langToggle" class="lang-btn">中文</button></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="privacy-page">
+        <div class="container">
+            <a href="/" class="back-button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                Back to Home
+            </a>
+
+            <div class="privacy-content">
+                <h1 class="privacy-title" id="privacyTitle">Privacy Policy</h1>
+                <p class="effective-date" id="effectiveDate">Last Updated: January 19, 2025</p>
+
+                <div id="privacyContentEn">
+                    <div class="privacy-section">
+                        <h2>1. Information We Collect</h2>
+                        <p>We collect information you provide directly to us, including:</p>
+                        <ul>
+                            <li><strong>Account Information:</strong> Name, age, gender, contact information, and other details you provide during registration</li>
+                            <li><strong>Questionnaire Responses:</strong> Your answers to our 66-question values assessment questionnaire</li>
+                            <li><strong>Profile Information:</strong> Optional details you choose to share in your profile</li>
+                            <li><strong>Chat Messages:</strong> Content of messages exchanged with other users</li>
+                            <li><strong>Usage Data:</strong> How you use the app, including matches, ratings, and interactions</li>
+                            <li><strong>Device Information:</strong> IP address, device type, operating system, and unique identifiers</li>
+                        </ul>
+                    </div>
+
+                    <div class="privacy-section">
+                        <h2>2. How We Use Your Information</h2>
+                        <p>We use the collected information to:</p>
+                        <ul>
+                            <li>Provide, maintain, and improve our services</li>
+                            <li>Match you with compatible partners using our AI algorithm</li>
+                            <li>Facilitate communication between users</li>
+                            <li>Process payments and purchases</li>
+                            <li>Send you notifications and updates</li>
+                            <li>Prevent fraud and ensure app security</li>
+                            <li>Comply with legal obligations</li>
+                        </ul>
+                    </div>
+
+                    <div class="privacy-section">
+                        <h2>3. Information Sharing</h2>
+                        <p>We respect your privacy and never share your personal information with third parties for marketing purposes. Your information may be shared:</p>
+                        <ul>
+                            <li><strong>With Other Users:</strong> Only with mutual approval through our rating system. Your profile is fully anonymous until both parties rate each other 4+ stars</li>
+                            <li><strong>Service Providers:</strong> With trusted third parties who assist in operating our app (e.g., cloud hosting, payment processing)</li>
+                            <li><strong>Legal Requirements:</strong> When required by law or to protect our rights</li>
+                            <li><strong>Business Transfers:</strong> In connection with a merger, acquisition, or sale of assets</li>
+                        </ul>
+                    </div>
+
+                    <div class="privacy-section">
+                        <h2>4. Data Security</h2>
+                        <p>We implement appropriate technical and organizational measures to protect your personal information, including:</p>
+                        <ul>
+                            <li>Encryption of data in transit and at rest</li>
+                            <li>Secure authentication and access controls</li>
+                            <li>Regular security assessments and updates</li>
+                            <li>Anonymization of sensitive personal data</li>
+                        </ul>
+                        <p>However, no method of transmission over the Internet is 100% secure. While we strive to protect your data, we cannot guarantee absolute security.</p>
+                    </div>
+
+                    <div class="privacy-section">
+                        <h2>5. Your Privacy Rights</h2>
+                        <p>You have the right to:</p>
+                        <ul>
+                            <li><strong>Access:</strong> Request a copy of your personal data</li>
+                            <li><strong>Correction:</strong> Update or correct inaccurate information</li>
+                            <li><strong>Deletion:</strong> Request deletion of your personal data</li>
+                            <li><strong>Objection:</strong> Object to processing of your personal data</li>
+                            <li><strong>Restriction:</strong> Request restriction of data processing</li>
+                            <li><strong>Data Portability:</strong> Receive your data in a structured format</li>
+                        </ul>
+                        <p>To exercise these rights, contact us at <a href="mailto:ab@tpr.wales">ab@tpr.wales</a></p>
+                    </div>
+
+                    <div class="privacy-section">
+                        <h2>6. Anonymous Matching System</h2>
+                        <p>VitaDuo's unique anonymous matching system ensures:</p>
+                        <ul>
+                            <li>Users are identified by random codes (e.g., U-K8X3M) until mutual approval</li>
+                            <li>Personal information (name, photo, contact) remains hidden</li>
+                            <li>Only after both users rate each other 4+ stars are profiles unlocked</li>
+                            <li>You control when and with whom you share your real identity</li>
+                        </ul>
+                    </div>
+
+                    <div class="privacy-section">
+                        <h2>7. Data Retention</h2>
+                        <p>We retain your personal data for as long as necessary to provide our services. When you delete your account:</p>
+                        <ul>
+                            <li>All personal information is permanently deleted within 30 days</li>
+                            <li>Messages may be retained for the other party involved</li>
+                            <li>Anonymized usage data may be retained for analytics</li>
+                        </ul>
+                    </div>
+
+                    <div class="privacy-section">
+                        <h2>8. Children's Privacy</h2>
+                        <p>VitaDuo is intended for users aged 18 and above. We do not knowingly collect personal information from children under 18. If we become aware that we have collected such information, we will delete it immediately.</p>
+                    </div>
+
+                    <div class="privacy-section">
+                        <h2>9. International Data Transfers</h2>
+                        <p>Your information may be transferred to and processed in countries other than your own. We ensure appropriate safeguards are in place to protect your data in accordance with this Privacy Policy.</p>
+                    </div>
+
+                    <div class="privacy-section">
+                        <h2>10. Changes to This Privacy Policy</h2>
+                        <p>We may update this Privacy Policy from time to time. We will notify you of any changes by:</p>
+                        <ul>
+                            <li>Emailing you before significant changes take effect</li>
+                            <li>Posting the new policy in the app</li>
+                            <li>Updating the "Last Updated" date</li>
+                        </ul>
+                        <p>Continued use of the app after changes constitutes acceptance of the new policy.</p>
+                    </div>
+
+                    <div class="privacy-section">
+                        <h2>11. Contact Us</h2>
+                        <div class="contact-info">
+                            <p><strong>Email:</strong> <a href="mailto:ab@tpr.wales">ab@tpr.wales</a></p>
+                            <p><strong>Website:</strong> https://dd3.tpr.wales</p>
+                        </div>
+                        <p style="margin-top: 1rem;">For privacy concerns specific to your region, please include your location in your inquiry.</p>
+                    </div>
+                </div>
+
+                <div id="privacyContentZh" style="display: none;">
+                    <div class="privacy-section">
+                        <h2>1. 信息收集</h2>
+                        <p>我们收集您直接提供给我们的信息，包括：</p>
+                        <ul>
+                            <li><strong>账户信息：</strong>姓名、年龄、性别、联系方式和其他注册时提供的信息</li>
+                            <li><strong>问卷回答：</strong>您对66题价值观评估问卷的回答</li>
+                            <li><strong>个人资料：</strong>您选择在个人资料中分享的可选详细信息</li>
+                            <li><strong>聊天消息：</strong>与其他用户交换的消息内容</li>
+                            <li><strong>使用数据：</strong>您如何使用应用，包括匹配、评分和互动</li>
+                            <li><strong>设备信息：</strong>IP地址、设备类型、操作系统和唯一标识符</li>
+                        </ul>
+                    </div>
+
+                    <div class="privacy-section">
+                        <h2>2. 信息使用</h2>
+                        <p>我们使用收集的信息来：</p>
+                        <ul>
+                            <li>提供、维护和改进我们的服务</li>
+                            <li>使用AI算法为您匹配合适的伴侣</li>
+                            <li>促进用户之间的交流</li>
+                            <li>处理付款和购买</li>
+                            <li>向您发送通知和更新</li>
+                            <li>防止欺诈并确保应用安全</li>
+                            <li>遵守法律义务</li>
+                        </ul>
+                    </div>
+
+                    <div class="privacy-section">
+                        <h2>3. 信息共享</h2>
+                        <p>我们尊重您的隐私，绝不会为了营销目的与第三方共享您的个人信息。您的信息可能在以下情况下共享：</p>
+                        <ul>
+                            <li><strong>与其他用户：</strong>仅通过我们的评分系统相互批准后。在双方互评4星以上之前，您的资料完全匿名</li>
+                            <li><strong>服务提供商：</strong>与协助我们运营应用的可信第三方（如云托管、支付处理）</li>
+                            <li><strong>法律要求：</strong>法律要求或保护我们的权利时</li>
+                            <li><strong>业务转让：</strong>在合并、收购或资产出售时</li>
+                        </ul>
+                    </div>
+
+                    <div class="privacy-section">
+                        <h2>4. 数据安全</h2>
+                        <p>我们采取适当的技术和组织措施来保护您的个人信息，包括：</p>
+                        <ul>
+                            <li>传输和存储时的数据加密</li>
+                            <li>安全认证和访问控制</li>
+                            <li>定期安全评估和更新</li>
+                            <li>敏感个人数据的匿名化</li>
+                        </ul>
+                        <p>但是，通过互联网传输的方法并非100%安全。虽然我们努力保护您的数据，但无法保证绝对安全。</p>
+                    </div>
+
+                    <div class="privacy-section">
+                        <h2>5. 您的隐私权利</h2>
+                        <p>您有权：</p>
+                        <ul>
+                            <li><strong>访问：</strong>请求获取您的个人数据副本</li>
+                            <li><strong>更正：</strong>更新或更正不准确的信息</li>
+                            <li><strong>删除：</strong>请求删除您的个人数据</li>
+                            <li><strong>反对：</strong>反对处理您的个人数据</li>
+                            <li><strong>限制：</strong>请求限制数据处理</li>
+                            <li><strong>数据可携带性：</strong>以结构化格式接收您的数据</li>
+                        </ul>
+                        <p>如需行使这些权利，请发送邮件至 <a href="mailto:ab@tpr.wales">ab@tpr.wales</a></p>
+                    </div>
+
+                    <div class="privacy-section">
+                        <h2>6. 匿名匹配系统</h2>
+                        <p>VitaDuo独特的匿名匹配系统确保：</p>
+                        <ul>
+                            <li>用户在相互批准之前由随机代码（如U-K8X3M）标识</li>
+                            <li>个人信息（姓名、照片、联系方式）保持隐藏</li>
+                            <li>只有双方互评4星以上时才解锁资料</li>
+                            <li>您可以控制何时与何人分享真实身份</li>
+                        </ul>
+                    </div>
+
+                    <div class="privacy-section">
+                        <h2>7. 数据保留</h2>
+                        <p>我们保留您的个人数据的时间以提供服务为必要。当您删除账户时：</p>
+                        <ul>
+                            <li>所有个人信息在30天内永久删除</li>
+                            <li>消息可能会为涉及的另一方保留</li>
+                            <li>匿名使用数据可能会保留用于分析</li>
+                        </ul>
+                    </div>
+
+                    <div class="privacy-section">
+                        <h2>8. 儿童隐私</h2>
+                        <p>VitaDuo仅适用于18岁及以上用户。我们不会故意收集18岁以下儿童的个人信息。如果我们发现已收集此类信息，将立即删除。</p>
+                    </div>
+
+                    <div class="privacy-section">
+                        <h2>9. 跨境数据传输</h2>
+                        <p>您的信息可能会被传输到您所在国家以外的地区并处理。我们确保采取适当保护措施，根据本隐私政策保护您的数据。</p>
+                    </div>
+
+                    <div class="privacy-section">
+                        <h2>10. 隐私政策变更</h2>
+                        <p>我们可能会不时更新本隐私政策。我们将通过以下方式通知您任何更改：</p>
+                        <ul>
+                            <li>在重大更改生效前通过电子邮件通知您</li>
+                            <li>在应用中发布新政策</li>
+                            <li>更新"最后更新"日期</li>
+                        </ul>
+                        <p>更改后继续使用应用即表示接受新政策。</p>
+                    </div>
+
+                    <div class="privacy-section">
+                        <h2>11. 联系我们</h2>
+                        <div class="contact-info">
+                            <p><strong>邮箱：</strong> <a href="mailto:ab@tpr.wales">ab@tpr.wales</a></p>
+                            <p><strong>网站：</strong> https://dd3.tpr.wales</p>
+                        </div>
+                        <p style="margin-top: 1rem;">如有针对您所在地区的隐私问题，请在咨询中注明您的位置。</p>
+                    </div>
+                </div>
+
+                <p style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #e5e7eb; color: var(--text-light); font-size: 0.875rem;">
+                    This Privacy Policy is designed to comply with GDPR, CCPA, and other applicable privacy regulations.<br>
+                    本隐私政策符合GDPR、CCPA和其他适用隐私法规。
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 语言切换
+        let currentLang = localStorage.getItem('language') || 'en';
+        const langToggle = document.getElementById('langToggle');
+        const privacyContentEn = document.getElementById('privacyContentEn');
+        const privacyContentZh = document.getElementById('privacyContentZh');
+        const privacyTitle = document.getElementById('privacyTitle');
+        const effectiveDate = document.getElementById('effectiveDate');
+        const backLink = document.querySelector('.back-button');
+
+        function updateLanguage(lang) {
+            currentLang = lang;
+            localStorage.setItem('language', lang);
+
+            if (lang === 'zh') {
+                privacyContentEn.style.display = 'none';
+                privacyContentZh.style.display = 'block';
+                privacyTitle.textContent = '隐私政策';
+                effectiveDate.textContent = '最后更新：2025年1月19日';
+                langToggle.textContent = 'English';
+                backLink.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>返回首页`;
+            } else {
+                privacyContentEn.style.display = 'block';
+                privacyContentZh.style.display = 'none';
+                privacyTitle.textContent = 'Privacy Policy';
+                effectiveDate.textContent = 'Last Updated: January 19, 2025';
+                langToggle.textContent = '中文';
+            }
+        }
+
+        // 初始化
+        updateLanguage(currentLang);
+
+        // 语言切换事件
+        langToggle.addEventListener('click', () => {
+            const newLang = currentLang === 'en' ? 'zh' : 'en';
+            updateLanguage(newLang);
+        });
+    </script>
+</body>
+</html>
