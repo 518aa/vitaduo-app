@@ -1273,12 +1273,9 @@ def _get_ai_user_for_match(match, sender_id):
 def _handle_ai_reply_request(match, sender_id, message_text):
     ai_user = _get_ai_user_for_match(match, sender_id)
     if not ai_user:
-        logger.warning(f"ai_reply: no AI user found for match={match.id} sender={sender_id}")
         return False
     key = _ai_state_key(match.id, sender_id)
-    logger.info(f"ai_reply: handling match={match.id} sender={sender_id} ai_user={ai_user.id} key={key}")
     if _is_silenced(key):
-        logger.info(f"ai_reply: silenced for key={key}")
         return False
     if _contains_ai_awareness(message_text):
         lang = _detect_language_simple(message_text)
@@ -1458,16 +1455,15 @@ def _generate_ai_reply(match_id, sender_id):
     match = Match.query.get(match_id)
     if not match:
         logger.warning(f"ai_reply: match {match_id} not found")
-        return None
+        return
     logger.info(f"ai_reply: generating for match={match_id} sender={sender_id}")
     ai_reply = _profile_call("ai_reply", _maybe_generate_ai_reply, match, sender_id)
     if not ai_reply:
         logger.warning(f"ai_reply: GLM returned nothing for match={match_id}")
-        return None
+        return
     ai_user, reply_text = ai_reply
     logger.info(f"ai_reply: got reply from user={ai_user.id}, len={len(reply_text)}")
     _schedule_ai_reply(match_id, ai_user.id, reply_text)
-    return reply_text
 
 def _enqueue_ai_reply(match_id, sender_id):
     logger.info(f"ai_reply: _enqueue_ai_reply called match={match_id} sender={sender_id}")
@@ -3110,29 +3106,9 @@ def create_app(config_name='default'):
         # 通过SocketIO广播消息
         socketio.emit('new_message', msg.to_dict(), room=f'match_{data["match_id"]}')
 
-        _ai_result = _handle_ai_reply_request(match, user_id, data.get('message', ''))
+        _handle_ai_reply_request(match, user_id, data.get('message', ''))
 
-        # Temp diagnostic: comprehensive AI status
-        _other_id = match.matched_user_id if user_id == match.user_id else match.user_id
-        _other = User.query.get(_other_id)
-        _tz = _get_ai_timezone_for_user(_other) if _other else None
-        _now = datetime.now(_tz) if _tz else datetime.utcnow()
-        _ai_diag = {
-            'other_id': _other_id,
-            'other_is_ai': _other.is_ai if _other else None,
-            'other_nickname': _other.nickname if _other else None,
-            'handle_result': str(_ai_result)[:100],
-            'is_night': _is_night_time(_now) if _other else False,
-            'is_silenced': _is_silenced(_ai_state_key(match.id, user_id)),
-            'is_meaningless': _is_meaningless_message(data.get('message', '')),
-            'is_ai_awareness': _contains_ai_awareness(data.get('message', '')),
-            'has_glm_config': bool(os.getenv("GLM_API_KEY")) and bool(os.getenv("GLM_API_BASE")),
-            'now_hour': _now.hour,
-            'now_tz': str(_tz) if _tz else 'UTC',
-        }
-        logger.info(f"ai_diag: {_ai_diag}")
-
-        return jsonify({'message': '发送成功', 'data': msg.to_dict(), 'ai_diag': _ai_diag}), 201
+        return jsonify({'message': '发送成功', 'data': msg.to_dict()}), 201
 
     # ==================== 评分相关 API ====================
 
