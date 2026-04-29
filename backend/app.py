@@ -1301,7 +1301,7 @@ def _handle_ai_reply_request(match, sender_id, message_text):
     tz = _get_ai_timezone_for_user(ai_user)
     now = datetime.now(tz)
     if _is_night_time(now) and not _is_emergency_message(message_text):
-        return _enqueue_night_reply(match.id, sender_id, ai_user)
+        logger.info(f"ai_reply: night time for user={ai_user.id}, replying immediately instead of delaying")
     return _enqueue_ai_reply(match.id, sender_id)
 
 def _infer_language_from_text(text):
@@ -1471,14 +1471,16 @@ def _generate_ai_reply(match_id, sender_id):
 
 def _enqueue_ai_reply(match_id, sender_id):
     logger.info(f"ai_reply: _enqueue_ai_reply called match={match_id} sender={sender_id}")
-    result = None
     try:
-        result = _generate_ai_reply(match_id, sender_id)
-        logger.info(f"ai_reply: sync generation completed for match={match_id} result={'ok' if result else 'None'}")
+        socketio.start_background_task(_ai_reply_background, match_id, sender_id)
+        logger.info(f"ai_reply: background task started for match={match_id}")
     except Exception as exc:
-        logger.error(f"ai_reply sync failed: {exc}", exc_info=True)
-        result = f"ERROR: {exc}"
-    return result or "no_result"
+        logger.error(f"ai_reply background start failed, falling back to sync: {exc}")
+        try:
+            _generate_ai_reply(match_id, sender_id)
+        except Exception as exc2:
+            logger.error(f"ai_reply sync fallback failed: {exc2}", exc_info=True)
+    return True
 
 
 def _ai_reply_background(match_id, sender_id):
