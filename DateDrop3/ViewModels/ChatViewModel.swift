@@ -149,7 +149,7 @@ class ChatViewModel: ObservableObject {
                 }
             },
             receiveValue: { [weak self] response in
-                // 添加新消息到列表
+                // Replace local message with server response
                 if let msg = response.data {
                     if let index = self?.messages.firstIndex(where: { $0.id == localId }) {
                         self?.messages[index] = msg
@@ -160,6 +160,15 @@ class ChatViewModel: ObservableObject {
                     self?.checkCanComplete()
                     if let matchId = self?.currentMatchId {
                         self?.saveMessagesCache(matchId: matchId, messages: self?.messages ?? [])
+                    }
+                }
+                // Immediately re-fetch to capture AI auto-replies
+                if let self = self, let matchId = self.currentMatchId {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                        self.loadMessages(matchId: matchId, userId: self.currentUserId, silent: true)
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 6.0) {
+                        self.loadMessages(matchId: matchId, userId: self.currentUserId, silent: true)
                     }
                 }
             }

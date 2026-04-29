@@ -1456,11 +1456,24 @@ def _generate_ai_reply(match_id, sender_id):
 def _enqueue_ai_reply(match_id, sender_id):
     logger.info(f"ai_reply: _enqueue_ai_reply called match={match_id} sender={sender_id}")
     try:
-        _generate_ai_reply(match_id, sender_id)
-        logger.info(f"ai_reply: sync generation completed for match={match_id}")
+        socketio.start_background_task(_ai_reply_background, match_id, sender_id)
+        logger.info(f"ai_reply: background task started for match={match_id}")
     except Exception as exc:
-        logger.error(f"ai_reply sync failed: {exc}", exc_info=True)
+        logger.error(f"ai_reply background start failed, falling back to sync: {exc}")
+        try:
+            _generate_ai_reply(match_id, sender_id)
+        except Exception as exc2:
+            logger.error(f"ai_reply sync fallback failed: {exc2}", exc_info=True)
     return True
+
+
+def _ai_reply_background(match_id, sender_id):
+    """Background task for AI reply generation (eventlet-compatible)."""
+    try:
+        _generate_ai_reply(match_id, sender_id)
+        logger.info(f"ai_reply: background generation completed for match={match_id}")
+    except Exception as exc:
+        logger.error(f"ai_reply background failed: {exc}", exc_info=True)
 
 def _seed_ai_users(target_count, batch_size, locale="mix"):
     if not os.getenv("GLM_API_KEY") or not os.getenv("GLM_API_BASE"):
