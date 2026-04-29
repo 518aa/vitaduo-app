@@ -1273,9 +1273,12 @@ def _get_ai_user_for_match(match, sender_id):
 def _handle_ai_reply_request(match, sender_id, message_text):
     ai_user = _get_ai_user_for_match(match, sender_id)
     if not ai_user:
+        logger.warning(f"ai_reply: no AI user found for match={match.id} sender={sender_id}")
         return False
     key = _ai_state_key(match.id, sender_id)
+    logger.info(f"ai_reply: handling match={match.id} sender={sender_id} ai_user={ai_user.id} key={key}")
     if _is_silenced(key):
+        logger.info(f"ai_reply: silenced for key={key}")
         return False
     if _contains_ai_awareness(message_text):
         lang = _detect_language_simple(message_text)
@@ -3106,7 +3109,7 @@ def create_app(config_name='default'):
         # 通过SocketIO广播消息
         socketio.emit('new_message', msg.to_dict(), room=f'match_{data["match_id"]}')
 
-        _handle_ai_reply_request(match, user_id, data.get('message', ''))
+        _ai_result = _handle_ai_reply_request(match, user_id, data.get('message', ''))
 
         # Temp diagnostic: check AI status
         _other_id = match.matched_user_id if user_id == match.user_id else match.user_id
@@ -3117,6 +3120,7 @@ def create_app(config_name='default'):
             'other_nickname': _other.nickname if _other else None,
             'other_has_profile': bool(_other.ai_profile) if _other else None,
             'sender_is_ai': User.query.get(user_id).is_ai if User.query.get(user_id) else None,
+            'handle_result': _ai_result,
         }
         logger.info(f"ai_diag: {_ai_diag}")
 
