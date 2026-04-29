@@ -3108,7 +3108,19 @@ def create_app(config_name='default'):
 
         _handle_ai_reply_request(match, user_id, data.get('message', ''))
 
-        return jsonify({'message': '发送成功', 'data': msg.to_dict()}), 201
+        # Temp diagnostic: check AI status
+        _other_id = match.matched_user_id if user_id == match.user_id else match.user_id
+        _other = User.query.get(_other_id)
+        _ai_diag = {
+            'other_id': _other_id,
+            'other_is_ai': _other.is_ai if _other else None,
+            'other_nickname': _other.nickname if _other else None,
+            'other_has_profile': bool(_other.ai_profile) if _other else None,
+            'sender_is_ai': User.query.get(user_id).is_ai if User.query.get(user_id) else None,
+        }
+        logger.info(f"ai_diag: {_ai_diag}")
+
+        return jsonify({'message': '发送成功', 'data': msg.to_dict(), 'ai_diag': _ai_diag}), 201
 
     # ==================== 评分相关 API ====================
 
