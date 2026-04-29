@@ -592,23 +592,41 @@ def _glm_chat(messages, temperature=0.7, timeout=180):
 
     parsed = urllib.parse.urlparse(base_url)
     host = parsed.hostname
-    port = parsed.port
+    port = parsed.port or (443 if parsed.scheme == "https" else 80)
     path = parsed.path or "/"
     if parsed.query:
         path += "?" + parsed.query
 
-    # DNS override handled at socket level via DNS_OVERRIDES env var
-    connect_host = host
+    # Resolve DNS with optional IP override (for Render free tier DNS failures)
+    dns_overrides = {}
+    _dns_str = os.getenv("DNS_OVERRIDES", "")
+    if _dns_str:
+        for pair in _dns_str.split(","):
+            if "=" in pair:
+                d, ip = pair.split("=", 1)
+                dns_overrides[d.strip()] = ip.strip()
+    connect_ip = dns_overrides.get(host, None)
 
     try:
         import http.client
         import ssl
-        use_https = parsed.scheme == "https"
-        if use_https:
-            ctx = ssl.create_default_context()
-            conn = http.client.HTTPSConnection(connect_host, port, timeout=timeout, context=ctx)
+        import socket as _socket
+
+        # Create socket with IP override or normal DNS
+        if connect_ip:
+            sock = _socket.create_connection((connect_ip, port), timeout=timeout)
+            if parsed.scheme == "https":
+                ctx = ssl.create_default_context()
+                ctx.server_hostname = host
+                sock = ctx.wrap_socket(sock, server_hostname=host)
         else:
-            conn = http.client.HTTPConnection(connect_host, port, timeout=timeout)
+            sock = _socket.create_connection((host, port), timeout=timeout)
+            if parsed.scheme == "https":
+                ctx = ssl.create_default_context()
+                sock = ctx.wrap_socket(sock, server_hostname=host)
+
+        conn = http.client.HTTPConnection(host, port, timeout=timeout)
+        conn.sock = sock
         conn.request("POST", path, body=payload, headers={
             "Content-Type": "application/json",
             "Authorization": f"Bearer {api_key}",
@@ -1964,7 +1982,27 @@ def create_app(config_name='default'):
         status_code = None
         error_detail = None
         try:
-            conn = _hc.HTTPSConnection(host, parsed.port, timeout=30)
+            import ssl as _ssl
+            import socket as _socket
+            port = parsed.port or (443 if parsed.scheme == "https" else 80)
+            dns_overrides = {}
+            _dns_str = os.getenv("DNS_OVERRIDES", "")
+            if _dns_str:
+                for pair in _dns_str.split(","):
+                    if "=" in pair:
+                        d, ip = pair.split("=", 1)
+                        dns_overrides[d.strip()] = ip.strip()
+            connect_ip = dns_overrides.get(host)
+            if connect_ip:
+                debug_info["dns_override"] = f"{host} -> {connect_ip}"
+                sock = _socket.create_connection((connect_ip, port), timeout=30)
+                if parsed.scheme == "https":
+                    ctx = _ssl.create_default_context()
+                    sock = ctx.wrap_socket(sock, server_hostname=host)
+                conn = _hc.HTTPConnection(host, port, timeout=30)
+                conn.sock = sock
+            else:
+                conn = _hc.HTTPSConnection(host, port, timeout=30)
             conn.request("POST", path, body=payload, headers={
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {api_key}",
