@@ -1921,19 +1921,52 @@ def create_app(config_name='default'):
             {"role": "system", "content": "You are a friendly AI chat partner. Reply briefly."},
             {"role": "user", "content": test_msg}
         ]
-        result = _glm_chat(messages, temperature=0.7, timeout=30)
-        config_info = {
-            "base_url": os.getenv("GLM_API_BASE", "NOT SET"),
-            "model": os.getenv("GLM_MODEL", "NOT SET"),
-            "has_key": bool(os.getenv("GLM_API_KEY")),
-            "key_prefix": (os.getenv("GLM_API_KEY") or "")[:8] + "..."
-        }
+        import http.client as _hc
+        import urllib.parse as _up
+        api_key = os.getenv("GLM_API_KEY")
+        base_url = os.getenv("GLM_API_BASE")
+        model = os.getenv("GLM_MODEL", "glm-4.7")
+        payload = json.dumps({"model": model, "messages": messages, "temperature": 0.7}).encode("utf-8")
+        parsed = _up.urlparse(base_url)
+        host = parsed.hostname
+        path = parsed.path or "/"
+        debug_info = {"host": host, "path": path, "model": model, "key_prefix": api_key[:8] if api_key else "NONE"}
+
+        raw_resp = None
+        status_code = None
+        error_detail = None
+        try:
+            conn = _hc.HTTPSConnection(host, parsed.port, timeout=30)
+            conn.request("POST", path, body=payload, headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+                "Host": host
+            })
+            resp = conn.getresponse()
+            status_code = resp.status
+            raw_resp = resp.read().decode("utf-8")
+            conn.close()
+        except Exception as exc:
+            error_detail = f"{type(exc).__name__}: {exc}"
+
+        debug_info["status_code"] = status_code
+        debug_info["error"] = error_detail
+        debug_info["raw_response"] = (raw_resp or "")[:1000]
+
+        content = None
+        if raw_resp and status_code and status_code < 400:
+            try:
+                parsed_resp = json.loads(raw_resp)
+                choices = parsed_resp.get("choices", [])
+                if choices:
+                    content = choices[0].get("message", {}).get("content")
+            except Exception as exc:
+                debug_info["parse_error"] = str(exc)
+
         return jsonify({
-            "config": config_info,
-            "input_message": test_msg,
-            "result": result,
-            "result_is_none": result is None,
-            "result_is_error": result.startswith("__GLM_ERROR__:") if result else False
+            "debug": debug_info,
+            "result": content,
+            "result_is_none": content is None
         }), 200
 
     @app.route('/api/debug/users', methods=['GET'])
