@@ -3102,9 +3102,20 @@ def create_app(config_name='default'):
         # 通过SocketIO广播消息
         socketio.emit('new_message', msg.to_dict(), room=f'match_{data["match_id"]}')
 
-        _handle_ai_reply_request(match, user_id, data.get('message', ''))
+        _ai_ok = _handle_ai_reply_request(match, user_id, data.get('message', ''))
 
-        return jsonify({'message': '发送成功', 'data': msg.to_dict()}), 201
+        # DIAG: show AI reply status
+        _oid = match.matched_user_id if user_id == match.user_id else match.user_id
+        _ou = User.query.get(_oid)
+        _su = User.query.get(user_id)
+        _diag = {
+            'sender': {'id': user_id, 'nick': _su.nickname if _su else '?', 'is_ai': _su.is_ai if _su else None},
+            'partner': {'id': _oid, 'nick': _ou.nickname if _ou else '?', 'is_ai': _ou.is_ai if _ou else None, 'has_profile': bool(_ou.ai_profile) if _ou else None},
+            'ai_handled': _ai_ok,
+            'glm_cfg': bool(os.getenv("GLM_API_KEY")),
+        }
+
+        return jsonify({'message': '发送成功', 'data': msg.to_dict(), '_d': _diag}), 201
 
     # ==================== 评分相关 API ====================
 
