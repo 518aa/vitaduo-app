@@ -1469,11 +1469,12 @@ def _enqueue_ai_reply(match_id, sender_id):
 
 def _ai_reply_background(match_id, sender_id):
     """Background task for AI reply generation (eventlet-compatible)."""
-    try:
-        _generate_ai_reply(match_id, sender_id)
-        logger.info(f"ai_reply: background generation completed for match={match_id}")
-    except Exception as exc:
-        logger.error(f"ai_reply background failed: {exc}", exc_info=True)
+    with app.app_context():
+        try:
+            _generate_ai_reply(match_id, sender_id)
+            logger.info(f"ai_reply: background generation completed for match={match_id}")
+        except Exception as exc:
+            logger.error(f"ai_reply background failed: {exc}", exc_info=True)
 
 def _seed_ai_users(target_count, batch_size, locale="mix"):
     if not os.getenv("GLM_API_KEY") or not os.getenv("GLM_API_BASE"):
