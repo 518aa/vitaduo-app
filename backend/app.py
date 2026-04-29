@@ -460,7 +460,7 @@ def _migrate_seed_ai_users():
     """One-time migration: mark matched non-test users as AI and populate ai_profile."""
     test_contacts = ["test@tpr.wales", "test@example.com"]
     matched_user_ids = set()
-    for row in db.session.execute(db.text("SELECT user1_id, user2_id FROM matches")).fetchall():
+    for row in db.session.execute(db.text("SELECT user_id, matched_user_id FROM matches")).fetchall():
         matched_user_ids.add(row[0])
         matched_user_ids.add(row[1])
     query = User.query.filter(
