@@ -1412,11 +1412,15 @@ def _maybe_generate_ai_reply(match, sender_id):
 def _generate_ai_reply(match_id, sender_id):
     match = Match.query.get(match_id)
     if not match:
+        logger.warning(f"ai_reply: match {match_id} not found")
         return
+    logger.info(f"ai_reply: generating for match={match_id} sender={sender_id}")
     ai_reply = _profile_call("ai_reply", _maybe_generate_ai_reply, match, sender_id)
     if not ai_reply:
+        logger.warning(f"ai_reply: GLM returned nothing for match={match_id}")
         return
     ai_user, reply_text = ai_reply
+    logger.info(f"ai_reply: got reply from user={ai_user.id}, len={len(reply_text)}")
     _schedule_ai_reply(match_id, ai_user.id, reply_text)
 
 def _enqueue_ai_reply(match_id, sender_id):
@@ -1426,9 +1430,19 @@ def _enqueue_ai_reply(match_id, sender_id):
         try:
             with app.app_context():
                 _generate_ai_reply(match_id, sender_id)
+        except Exception as exc:
+            logger.error(f"ai_reply task failed: {exc}")
         finally:
             AI_SEMAPHORE.release()
-    AI_EXECUTOR.submit(task)
+    try:
+        AI_EXECUTOR.submit(task)
+    except Exception as exc:
+        logger.error(f"ai_reply executor submit failed: {exc}, running sync")
+        AI_SEMAPHORE.release()
+        try:
+            _generate_ai_reply(match_id, sender_id)
+        except Exception as exc2:
+            logger.error(f"ai_reply sync fallback failed: {exc2}")
     return True
 
 def _seed_ai_users(target_count, batch_size, locale="mix"):
@@ -3051,7 +3065,13 @@ def create_app(config_name='default'):
 
         queued = _handle_ai_reply_request(match, user_id, data.get('message', ''))
 
-        return jsonify({'message': '发送成功', 'data': msg.to_dict(), 'ai_reply_queued': queued}), 201
+        ai_diag = {}
+        other_id = match.matched_user_id if user_id == match.user_id else match.user_id
+        other_user = User.query.get(other_id)
+        if other_user:
+            ai_diag = {"other_id": other_id, "is_ai": other_user.is_ai, "has_profile": bool(other_user.ai_profile)}
+
+        return jsonify({'message': '发送成功', 'data': msg.to_dict(), 'ai_reply_queued': queued, 'ai_diag': ai_diag}), 201
 
     # ==================== 评分相关 API ====================
 
