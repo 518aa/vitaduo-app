@@ -1468,14 +1468,10 @@ def _generate_ai_reply(match_id, sender_id):
 def _enqueue_ai_reply(match_id, sender_id):
     logger.info(f"ai_reply: _enqueue_ai_reply called match={match_id} sender={sender_id}")
     try:
-        socketio.start_background_task(_ai_reply_background, match_id, sender_id)
-        logger.info(f"ai_reply: background task started for match={match_id}")
+        _generate_ai_reply(match_id, sender_id)
+        logger.info(f"ai_reply: sync generation completed for match={match_id}")
     except Exception as exc:
-        logger.error(f"ai_reply background start failed, falling back to sync: {exc}")
-        try:
-            _generate_ai_reply(match_id, sender_id)
-        except Exception as exc2:
-            logger.error(f"ai_reply sync fallback failed: {exc2}", exc_info=True)
+        logger.error(f"ai_reply sync failed: {exc}", exc_info=True)
     return True
 
 
