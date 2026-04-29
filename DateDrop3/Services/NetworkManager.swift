@@ -37,9 +37,9 @@ class NetworkManager {
     #if DEBUG
     private let debugDefaultBaseURL: String = {
         #if targetEnvironment(simulator)
-        return "https://dd3.tpr.wales/api"
+        return "https://vitaduo-api.onrender.com/api"
         #else
-        return "https://dd3.tpr.wales/api"
+        return "https://vitaduo-api.onrender.com/api"
         #endif
     }()
     #endif
@@ -52,7 +52,7 @@ class NetworkManager {
         #if DEBUG
         return debugDefaultBaseURL
         #else
-        return "https://dd3.tpr.wales/api"
+        return "https://vitaduo-api.onrender.com/api"
         #endif
     }
 
@@ -315,51 +315,19 @@ class NetworkManager {
     // MARK: - 聊天相关API
 
     func getChatMessages(matchId: Int, userId: Int? = nil) -> AnyPublisher<MessagesResponse, Error> {
-        let endpoint: String
-        if let userId = userId {
-            endpoint = "/chat/\(matchId)/messages?user_id=\(userId)"
-            guard let request = createRequestNoAuth(endpoint: endpoint, method: "GET") else {
-                return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
-            }
-            return URLSession.shared.dataTaskPublisher(for: request)
-                .map(\.data)
-                .decode(type: MessagesResponse.self, decoder: JSONDecoder())
-                .mapError { [weak self] error in
-                    self?.localizedNetworkError(error) ?? error
-                }
-                .receive(on: DispatchQueue.main)
-                .eraseToAnyPublisher()
-        }
-        endpoint = "/chat/\(matchId)/messages"
+        let endpoint = "/chat/\(matchId)/messages"
         return performRequest(endpoint: endpoint, method: "GET", responseType: MessagesResponse.self)
     }
 
     func sendMessage(matchId: Int, message: String, messageType: String = "text", userId: Int? = nil) -> AnyPublisher<APIResponse<ChatMessage>, Error> {
-        var body: [String: Any] = [
+        let body: [String: Any] = [
             "match_id": matchId,
             "message": message,
             "message_type": messageType
         ]
-        if let userId = userId {
-            body["user_id"] = userId
-        }
 
-        guard let url = URL(string: "\(baseURL)/chat/send") else {
+        guard let request = createRequest(endpoint: "/chat/send", method: "POST", body: try? JSONSerialization.data(withJSONObject: body)) else {
             return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        if userId != nil {
-            request.allHTTPHeaderFields = getNoAuthHeader()
-        } else {
-            request.allHTTPHeaderFields = getAuthorizationHeader()
-        }
-
-        do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        } catch {
-            return Fail(error: error).eraseToAnyPublisher()
         }
 
         return URLSession.shared.dataTaskPublisher(for: request)

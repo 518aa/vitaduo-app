@@ -11,7 +11,7 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 object NetworkManager {
-    private const val BASE_URL = "https://dd3.tpr.wales/api/"
+    private const val BASE_URL = "https://vitaduo-api.onrender.com/api/"
     private const val PREFS_NAME = "DateDropPrefs"
     private const val TOKEN_KEY = "access_token"
     private const val LANGUAGE_KEY = "app_language"
