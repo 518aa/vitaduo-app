@@ -25,24 +25,6 @@ from dotenv import load_dotenv
 # 加载环境变量
 load_dotenv()
 
-# DNS pre-resolution for GLM API domains that may fail on Render
-_DNS_OVERRIDES_STR = os.getenv("DNS_OVERRIDES", "")
-_DNS_CACHE = {}
-if _DNS_OVERRIDES_STR:
-    for pair in _DNS_OVERRIDES_STR.split(","):
-        pair = pair.strip()
-        if "=" in pair:
-            domain, ip = pair.split("=", 1)
-            _DNS_CACHE[domain.strip()] = ip.strip()
-if _DNS_CACHE:
-    _orig_getaddrinfo = socket.getaddrinfo
-    def _patched_getaddrinfo(host, port, *args, **kwargs):
-        if host in _DNS_CACHE:
-            host = _DNS_CACHE[host]
-        return _orig_getaddrinfo(host, port, *args, **kwargs)
-    socket.getaddrinfo = _patched_getaddrinfo
-    logger.info(f"DNS overrides active: {list(_DNS_CACHE.keys())}")
-
 from datetime import datetime, timedelta
 from functools import wraps
 try:
@@ -1955,86 +1937,6 @@ def create_app(config_name='default'):
         }
         return jsonify(summary), 200
 
-    @app.route('/api/debug/glm/test', methods=['POST'])
-    def debug_glm_test():
-        if not _debug_allowed():
-            secret = os.getenv("GLM_API_KEY", "")
-            if not secret or request.args.get("key") != secret[:8]:
-                return jsonify({'error': 'debug disabled'}), 403
-        data = request.get_json() or {}
-        test_msg = data.get('message', 'Hello, say hi in one sentence.')
-        messages = [
-            {"role": "system", "content": "You are a friendly AI chat partner. Reply briefly."},
-            {"role": "user", "content": test_msg}
-        ]
-        import http.client as _hc
-        import urllib.parse as _up
-        api_key = os.getenv("GLM_API_KEY")
-        base_url = os.getenv("GLM_API_BASE")
-        model = os.getenv("GLM_MODEL", "glm-4.7")
-        payload = json.dumps({"model": model, "messages": messages, "temperature": 0.7}).encode("utf-8")
-        parsed = _up.urlparse(base_url)
-        host = parsed.hostname
-        path = parsed.path or "/"
-        debug_info = {"host": host, "path": path, "model": model, "key_prefix": api_key[:8] if api_key else "NONE"}
-
-        raw_resp = None
-        status_code = None
-        error_detail = None
-        try:
-            import ssl as _ssl
-            import socket as _socket
-            port = parsed.port or (443 if parsed.scheme == "https" else 80)
-            dns_overrides = {}
-            _dns_str = os.getenv("DNS_OVERRIDES", "")
-            if _dns_str:
-                for pair in _dns_str.split(","):
-                    if "=" in pair:
-                        d, ip = pair.split("=", 1)
-                        dns_overrides[d.strip()] = ip.strip()
-            connect_ip = dns_overrides.get(host)
-            if connect_ip:
-                debug_info["dns_override"] = f"{host} -> {connect_ip}"
-                sock = _socket.create_connection((connect_ip, port), timeout=30)
-                if parsed.scheme == "https":
-                    ctx = _ssl.create_default_context()
-                    sock = ctx.wrap_socket(sock, server_hostname=host)
-                conn = _hc.HTTPConnection(host, port, timeout=30)
-                conn.sock = sock
-            else:
-                conn = _hc.HTTPSConnection(host, port, timeout=30)
-            conn.request("POST", path, body=payload, headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {api_key}",
-                "Host": host
-            })
-            resp = conn.getresponse()
-            status_code = resp.status
-            raw_resp = resp.read().decode("utf-8")
-            conn.close()
-        except Exception as exc:
-            error_detail = f"{type(exc).__name__}: {exc}"
-
-        debug_info["status_code"] = status_code
-        debug_info["error"] = error_detail
-        debug_info["raw_response"] = (raw_resp or "")[:1000]
-
-        content = None
-        if raw_resp and status_code and status_code < 400:
-            try:
-                parsed_resp = json.loads(raw_resp)
-                choices = parsed_resp.get("choices", [])
-                if choices:
-                    content = choices[0].get("message", {}).get("content")
-            except Exception as exc:
-                debug_info["parse_error"] = str(exc)
-
-        return jsonify({
-            "debug": debug_info,
-            "result": content,
-            "result_is_none": content is None
-        }), 200
-
     @app.route('/api/debug/users', methods=['GET'])
     def debug_users():
         if not _debug_allowed():
@@ -3178,15 +3080,9 @@ def create_app(config_name='default'):
         # 通过SocketIO广播消息
         socketio.emit('new_message', msg.to_dict(), room=f'match_{data["match_id"]}')
 
-        queued = _handle_ai_reply_request(match, user_id, data.get('message', ''))
+        _handle_ai_reply_request(match, user_id, data.get('message', ''))
 
-        ai_diag = {}
-        other_id = match.matched_user_id if user_id == match.user_id else match.user_id
-        other_user = User.query.get(other_id)
-        if other_user:
-            ai_diag = {"other_id": other_id, "is_ai": other_user.is_ai, "has_profile": bool(other_user.ai_profile)}
-
-        return jsonify({'message': '发送成功', 'data': msg.to_dict(), 'ai_reply_queued': queued, 'ai_diag': ai_diag}), 201
+        return jsonify({'message': '发送成功', 'data': msg.to_dict()}), 201
 
     # ==================== 评分相关 API ====================
 
