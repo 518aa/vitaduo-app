@@ -3110,16 +3110,23 @@ def create_app(config_name='default'):
 
         _ai_result = _handle_ai_reply_request(match, user_id, data.get('message', ''))
 
-        # Temp diagnostic: check AI status
+        # Temp diagnostic: comprehensive AI status
         _other_id = match.matched_user_id if user_id == match.user_id else match.user_id
         _other = User.query.get(_other_id)
+        _tz = _get_ai_timezone_for_user(_other) if _other else None
+        _now = datetime.now(_tz) if _tz else datetime.utcnow()
         _ai_diag = {
             'other_id': _other_id,
             'other_is_ai': _other.is_ai if _other else None,
             'other_nickname': _other.nickname if _other else None,
-            'other_has_profile': bool(_other.ai_profile) if _other else None,
-            'sender_is_ai': User.query.get(user_id).is_ai if User.query.get(user_id) else None,
-            'handle_result': _ai_result,
+            'handle_result': str(_ai_result)[:100],
+            'is_night': _is_night_time(_now) if _other else False,
+            'is_silenced': _is_silenced(_ai_state_key(match.id, user_id)),
+            'is_meaningless': _is_meaningless_message(data.get('message', '')),
+            'is_ai_awareness': _contains_ai_awareness(data.get('message', '')),
+            'has_glm_config': bool(os.getenv("GLM_API_KEY")) and bool(os.getenv("GLM_API_BASE")),
+            'now_hour': _now.hour,
+            'now_tz': str(_tz) if _tz else 'UTC',
         }
         logger.info(f"ai_diag: {_ai_diag}")
 
