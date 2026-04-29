@@ -561,7 +561,9 @@ def _glm_chat(messages, temperature=0.7, timeout=180):
     model = os.getenv("GLM_MODEL", "glm-4.7")
     timeout = int(os.getenv("GLM_TIMEOUT", str(timeout)))
     if not api_key or not base_url:
+        logger.warning(f"glm_chat: missing config key={bool(api_key)} base={bool(base_url)}")
         return None
+    logger.info(f"glm_chat: calling {base_url} model={model} msgs={len(messages)}")
     payload = {
         "model": model,
         "messages": messages,
@@ -600,6 +602,7 @@ def _glm_chat(messages, temperature=0.7, timeout=180):
                 or choices[0].get("text")
             )
             if content:
+                logger.info(f"glm_chat: got reply len={len(content)}")
                 return content
     logger.warning(f"glm response invalid: {response_data}")
     return None
@@ -1321,32 +1324,26 @@ def _schedule_ai_reply(match_id, ai_user_id, reply_text):
     parts = _split_ai_reply(reply_text)
     if not parts:
         return
-    first_min, first_max, segment_min, segment_max = _get_ai_delay_range()
-
-    def worker():
-        with app.app_context():
-            for index, part in enumerate(parts):
-                delay = random.uniform(first_min, first_max) if index == 0 else random.uniform(segment_min, segment_max)
-                time.sleep(delay)
-                try:
-                    match = Match.query.get(match_id)
-                    if not match:
-                        continue
-                    ai_msg = ChatMessage(
-                        match_id=match_id,
-                        sender_id=ai_user_id,
-                        message=part,
-                        message_type='text'
-                    )
-                    db.session.add(ai_msg)
-                    match.chat_message_count += 1
-                    db.session.commit()
-                    socketio.emit('new_message', ai_msg.to_dict(), room=f'match_{match_id}')
-                except Exception as exc:
-                    db.session.rollback()
-                    logger.error(f"ai reply schedule failed: {exc}")
-
-    threading.Thread(target=worker, daemon=True).start()
+    logger.info(f"ai_reply: _schedule_ai_reply match={match_id} ai_user={ai_user_id} parts={len(parts)}")
+    for index, part in enumerate(parts):
+        try:
+            match = Match.query.get(match_id)
+            if not match:
+                continue
+            ai_msg = ChatMessage(
+                match_id=match_id,
+                sender_id=ai_user_id,
+                message=part,
+                message_type='text'
+            )
+            db.session.add(ai_msg)
+            match.chat_message_count += 1
+            db.session.commit()
+            socketio.emit('new_message', ai_msg.to_dict(), room=f'match_{match_id}')
+            logger.info(f"ai_reply: saved part {index+1}/{len(parts)} for match={match_id}")
+        except Exception as exc:
+            db.session.rollback()
+            logger.error(f"ai reply schedule failed: {exc}", exc_info=True)
 
 def _build_ai_messages(ai_user, other_user, chat_messages):
     profile = _parse_ai_profile(ai_user.ai_profile)
@@ -1424,25 +1421,12 @@ def _generate_ai_reply(match_id, sender_id):
     _schedule_ai_reply(match_id, ai_user.id, reply_text)
 
 def _enqueue_ai_reply(match_id, sender_id):
-    if not AI_SEMAPHORE.acquire(blocking=False):
-        return False
-    def task():
-        try:
-            with app.app_context():
-                _generate_ai_reply(match_id, sender_id)
-        except Exception as exc:
-            logger.error(f"ai_reply task failed: {exc}")
-        finally:
-            AI_SEMAPHORE.release()
+    logger.info(f"ai_reply: _enqueue_ai_reply called match={match_id} sender={sender_id}")
     try:
-        AI_EXECUTOR.submit(task)
+        _generate_ai_reply(match_id, sender_id)
+        logger.info(f"ai_reply: sync generation completed for match={match_id}")
     except Exception as exc:
-        logger.error(f"ai_reply executor submit failed: {exc}, running sync")
-        AI_SEMAPHORE.release()
-        try:
-            _generate_ai_reply(match_id, sender_id)
-        except Exception as exc2:
-            logger.error(f"ai_reply sync fallback failed: {exc2}")
+        logger.error(f"ai_reply sync failed: {exc}", exc_info=True)
     return True
 
 def _seed_ai_users(target_count, batch_size, locale="mix"):
