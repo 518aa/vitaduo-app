@@ -564,34 +564,39 @@ def _glm_chat(messages, temperature=0.7, timeout=180):
         logger.warning(f"glm_chat: missing config key={bool(api_key)} base={bool(base_url)}")
         return None
     logger.info(f"glm_chat: calling {base_url} model={model} msgs={len(messages)}")
-    payload = {
+    payload = json.dumps({
         "model": model,
         "messages": messages,
         "temperature": temperature
-    }
-    data = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(
-        base_url,
-        data=data,
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}"
-        }
-    )
+    }).encode("utf-8")
+
+    parsed = urllib.parse.urlparse(base_url)
+    host = parsed.hostname
+    port = parsed.port
+    path = parsed.path or "/"
+    if parsed.query:
+        path += "?" + parsed.query
+
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            raw = resp.read().decode("utf-8")
+        import http.client
+        use_https = parsed.scheme == "https"
+        conn = http.client.HTTPSConnection(host, port, timeout=timeout) if use_https else http.client.HTTPConnection(host, port, timeout=timeout)
+        conn.request("POST", path, body=payload, headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+            "Host": host
+        })
+        resp = conn.getresponse()
+        raw = resp.read().decode("utf-8")
+        conn.close()
+        if resp.status >= 400:
+            logger.error(f"glm HTTP {resp.status}: {raw[:500]}")
+            return f"__GLM_ERROR__:{raw[:200]}"
         response_data = json.loads(raw)
-    except urllib.error.HTTPError as exc:
-        try:
-            body = exc.read().decode("utf-8")
-        except Exception:
-            body = str(exc)
-        logger.error(f"glm request failed: {body}")
-        return f"__GLM_ERROR__:{body}"
     except Exception as exc:
-        logger.error(f"glm request failed: {exc}")
+        logger.error(f"glm request failed: {exc}", exc_info=True)
         return None
+
     if isinstance(response_data, dict):
         choices = response_data.get("choices") or response_data.get("data") or []
         if choices and isinstance(choices[0], dict):
@@ -604,7 +609,7 @@ def _glm_chat(messages, temperature=0.7, timeout=180):
             if content:
                 logger.info(f"glm_chat: got reply len={len(content)}")
                 return content
-    logger.warning(f"glm response invalid: {response_data}")
+    logger.warning(f"glm response invalid: {str(response_data)[:300]}")
     return None
 
 CHINESE_NICKNAMES = (
@@ -1903,6 +1908,33 @@ def create_app(config_name='default'):
             "max_rss": usage.ru_maxrss
         }
         return jsonify(summary), 200
+
+    @app.route('/api/debug/glm/test', methods=['POST'])
+    def debug_glm_test():
+        if not _debug_allowed():
+            secret = os.getenv("GLM_API_KEY", "")
+            if not secret or request.args.get("key") != secret[:8]:
+                return jsonify({'error': 'debug disabled'}), 403
+        data = request.get_json() or {}
+        test_msg = data.get('message', 'Hello, say hi in one sentence.')
+        messages = [
+            {"role": "system", "content": "You are a friendly AI chat partner. Reply briefly."},
+            {"role": "user", "content": test_msg}
+        ]
+        result = _glm_chat(messages, temperature=0.7, timeout=30)
+        config_info = {
+            "base_url": os.getenv("GLM_API_BASE", "NOT SET"),
+            "model": os.getenv("GLM_MODEL", "NOT SET"),
+            "has_key": bool(os.getenv("GLM_API_KEY")),
+            "key_prefix": (os.getenv("GLM_API_KEY") or "")[:8] + "..."
+        }
+        return jsonify({
+            "config": config_info,
+            "input_message": test_msg,
+            "result": result,
+            "result_is_none": result is None,
+            "result_is_error": result.startswith("__GLM_ERROR__:") if result else False
+        }), 200
 
     @app.route('/api/debug/users', methods=['GET'])
     def debug_users():
