@@ -577,10 +577,21 @@ def _glm_chat(messages, temperature=0.7, timeout=180):
     if parsed.query:
         path += "?" + parsed.query
 
+    # DNS override: use IP directly to bypass DNS resolution failures on Render
+    GLM_DNS_OVERRIDE = os.getenv("GLM_DNS_OVERRIDE", "")
+    connect_host = host
+    if GLM_DNS_OVERRIDE:
+        connect_host = GLM_DNS_OVERRIDE
+
     try:
         import http.client
+        import ssl
         use_https = parsed.scheme == "https"
-        conn = http.client.HTTPSConnection(host, port, timeout=timeout) if use_https else http.client.HTTPConnection(host, port, timeout=timeout)
+        if use_https:
+            ctx = ssl.create_default_context()
+            conn = http.client.HTTPSConnection(connect_host, port, timeout=timeout, context=ctx)
+        else:
+            conn = http.client.HTTPConnection(connect_host, port, timeout=timeout)
         conn.request("POST", path, body=payload, headers={
             "Content-Type": "application/json",
             "Authorization": f"Bearer {api_key}",
