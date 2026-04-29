@@ -458,58 +458,62 @@ def _ensure_user_columns():
 
 def _migrate_seed_ai_users():
     """One-time migration: mark matched non-test users as AI and populate ai_profile."""
-    test_contacts = ["test@tpr.wales", "test@example.com"]
-    matched_user_ids = set()
-    for row in db.session.execute(db.text("SELECT user_id, matched_user_id FROM matches")).fetchall():
-        matched_user_ids.add(row[0])
-        matched_user_ids.add(row[1])
-    query = User.query.filter(
-        User.is_ai == False  # noqa: E712
-    )
-    if matched_user_ids:
-        query = query.filter(User.id.in_(matched_user_ids))
-    query = query.filter(User.contact.notin_(test_contacts))
-    users = query.all()
-    if not users:
-        return
-    from matching import generate_match_code
-    existing_codes = {c for (c,) in db.session.query(MatchCode.code).all()}
-    updated = 0
-    for user in users:
-        user.is_ai = True
-        is_chinese = bool(user.city and any("\u4e00" <= ch <= "\u9fff" for ch in user.city))
-        persona = random.choice(CHINESE_PERSONAS if is_chinese else (
-            "Love traveling and food, gentle and detail-oriented",
-            "Passionate about sports and music, optimistic and outgoing",
-            "Prefer quiet reading, rational with good boundaries",
-            "Enjoy photography and movies, slow to warm up but genuine",
-            "Value quality of life, good at communication and listening",
-            "Responsible, value family and companionship",
-            "Love exploring city corners, always discovering new things",
-            "Serious at work, love cooking at home"
-        ))
-        parts = (user.city or "").split("\u00b7")
-        country = parts[0].strip() if len(parts) >= 1 else ""
-        city = parts[1].strip() if len(parts) >= 2 else (user.city or "")
-        user.ai_profile = json.dumps({
-            "nickname": user.nickname,
-            "age": user.age,
-            "gender": user.gender,
-            "country": country,
-            "city": city,
-            "school_career": user.school_career or "",
-            "persona": persona,
-            "language": "中文" if is_chinese else "英语"
-        }, ensure_ascii=False)
-        if not MatchCode.query.filter_by(user_id=user.id).first():
-            code = generate_match_code()
-            while code in existing_codes:
+    try:
+        test_contacts = ["test@tpr.wales", "test@example.com"]
+        matched_user_ids = set()
+        for row in db.session.execute(db.text("SELECT user_id, matched_user_id FROM matches")).fetchall():
+            matched_user_ids.add(row[0])
+            matched_user_ids.add(row[1])
+        query = User.query.filter(
+            User.is_ai == False  # noqa: E712
+        )
+        if matched_user_ids:
+            query = query.filter(User.id.in_(matched_user_ids))
+        query = query.filter(User.contact.notin_(test_contacts))
+        users = query.all()
+        if not users:
+            return
+        from matching import generate_match_code
+        existing_codes = {c for (c,) in db.session.query(MatchCode.code).all()}
+        updated = 0
+        for user in users:
+            user.is_ai = True
+            is_chinese = bool(user.city and any("\u4e00" <= ch <= "\u9fff" for ch in user.city))
+            persona = random.choice(CHINESE_PERSONAS if is_chinese else (
+                "Love traveling and food, gentle and detail-oriented",
+                "Passionate about sports and music, optimistic and outgoing",
+                "Prefer quiet reading, rational with good boundaries",
+                "Enjoy photography and movies, slow to warm up but genuine",
+                "Value quality of life, good at communication and listening",
+                "Responsible, value family and companionship",
+                "Love exploring city corners, always discovering new things",
+                "Serious at work, love cooking at home"
+            ))
+            parts = (user.city or "").split("\u00b7")
+            country = parts[0].strip() if len(parts) >= 1 else ""
+            city = parts[1].strip() if len(parts) >= 2 else (user.city or "")
+            user.ai_profile = json.dumps({
+                "nickname": user.nickname,
+                "age": user.age,
+                "gender": user.gender,
+                "country": country,
+                "city": city,
+                "school_career": user.school_career or "",
+                "persona": persona,
+                "language": "中文" if is_chinese else "英语"
+            }, ensure_ascii=False)
+            if not MatchCode.query.filter_by(user_id=user.id).first():
                 code = generate_match_code()
-            existing_codes.add(code)
-            db.session.add(MatchCode(user_id=user.id, code=code, is_active=True))
-        updated += 1
-    db.session.commit()
-    logger.info(f"AI migration: marked {updated} users as AI")
+                while code in existing_codes:
+                    code = generate_match_code()
+                existing_codes.add(code)
+                db.session.add(MatchCode(user_id=user.id, code=code, is_active=True))
+            updated += 1
+        db.session.commit()
+        logger.info(f"AI migration: marked {updated} users as AI")
+    except Exception as exc:
+        db.session.rollback()
+        logger.error(f"AI migration failed: {exc}", exc_info=True)
 
 
 def _ensure_chat_indexes():
