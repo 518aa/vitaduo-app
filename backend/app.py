@@ -457,11 +457,19 @@ def _ensure_user_columns():
     db.session.commit()
 
 def _migrate_seed_ai_users():
-    """One-time migration: mark @vitaduo.ai users as AI and populate ai_profile."""
-    users = User.query.filter(
-        User.contact.like("%@vitaduo.ai"),
+    """One-time migration: mark matched non-test users as AI and populate ai_profile."""
+    test_contacts = ["test@tpr.wales", "test@example.com"]
+    matched_user_ids = set()
+    for row in db.session.execute(db.text("SELECT user1_id, user2_id FROM matches")).fetchall():
+        matched_user_ids.add(row[0])
+        matched_user_ids.add(row[1])
+    query = User.query.filter(
         User.is_ai == False  # noqa: E712
-    ).all()
+    )
+    if matched_user_ids:
+        query = query.filter(User.id.in_(matched_user_ids))
+    query = query.filter(User.contact.notin_(test_contacts))
+    users = query.all()
     if not users:
         return
     from matching import generate_match_code
