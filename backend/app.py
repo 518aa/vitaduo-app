@@ -1458,28 +1458,27 @@ def _generate_ai_reply(match_id, sender_id):
     match = Match.query.get(match_id)
     if not match:
         logger.warning(f"ai_reply: match {match_id} not found")
-        return
+        return None
     logger.info(f"ai_reply: generating for match={match_id} sender={sender_id}")
     ai_reply = _profile_call("ai_reply", _maybe_generate_ai_reply, match, sender_id)
     if not ai_reply:
         logger.warning(f"ai_reply: GLM returned nothing for match={match_id}")
-        return
+        return None
     ai_user, reply_text = ai_reply
     logger.info(f"ai_reply: got reply from user={ai_user.id}, len={len(reply_text)}")
     _schedule_ai_reply(match_id, ai_user.id, reply_text)
+    return reply_text
 
 def _enqueue_ai_reply(match_id, sender_id):
     logger.info(f"ai_reply: _enqueue_ai_reply called match={match_id} sender={sender_id}")
+    result = None
     try:
-        socketio.start_background_task(_ai_reply_background, match_id, sender_id)
-        logger.info(f"ai_reply: background task started for match={match_id}")
+        result = _generate_ai_reply(match_id, sender_id)
+        logger.info(f"ai_reply: sync generation completed for match={match_id} result={'ok' if result else 'None'}")
     except Exception as exc:
-        logger.error(f"ai_reply background start failed, falling back to sync: {exc}")
-        try:
-            _generate_ai_reply(match_id, sender_id)
-        except Exception as exc2:
-            logger.error(f"ai_reply sync fallback failed: {exc2}", exc_info=True)
-    return True
+        logger.error(f"ai_reply sync failed: {exc}", exc_info=True)
+        result = f"ERROR: {exc}"
+    return result or "no_result"
 
 
 def _ai_reply_background(match_id, sender_id):
