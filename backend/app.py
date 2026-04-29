@@ -11,7 +11,9 @@ import threading
 import time
 import urllib.request
 import urllib.error
+import urllib.parse
 import hashlib
+import socket
 from collections import OrderedDict, deque
 from concurrent.futures import ThreadPoolExecutor
 import logging
@@ -22,6 +24,24 @@ from dotenv import load_dotenv
 
 # 加载环境变量
 load_dotenv()
+
+# DNS pre-resolution for GLM API domains that may fail on Render
+_DNS_OVERRIDES_STR = os.getenv("DNS_OVERRIDES", "")
+_DNS_CACHE = {}
+if _DNS_OVERRIDES_STR:
+    for pair in _DNS_OVERRIDES_STR.split(","):
+        pair = pair.strip()
+        if "=" in pair:
+            domain, ip = pair.split("=", 1)
+            _DNS_CACHE[domain.strip()] = ip.strip()
+if _DNS_CACHE:
+    _orig_getaddrinfo = socket.getaddrinfo
+    def _patched_getaddrinfo(host, port, *args, **kwargs):
+        if host in _DNS_CACHE:
+            host = _DNS_CACHE[host]
+        return _orig_getaddrinfo(host, port, *args, **kwargs)
+    socket.getaddrinfo = _patched_getaddrinfo
+    logger.info(f"DNS overrides active: {list(_DNS_CACHE.keys())}")
 
 from datetime import datetime, timedelta
 from functools import wraps
@@ -577,11 +597,8 @@ def _glm_chat(messages, temperature=0.7, timeout=180):
     if parsed.query:
         path += "?" + parsed.query
 
-    # DNS override: use IP directly to bypass DNS resolution failures on Render
-    GLM_DNS_OVERRIDE = os.getenv("GLM_DNS_OVERRIDE", "")
+    # DNS override handled at socket level via DNS_OVERRIDES env var
     connect_host = host
-    if GLM_DNS_OVERRIDE:
-        connect_host = GLM_DNS_OVERRIDE
 
     try:
         import http.client
